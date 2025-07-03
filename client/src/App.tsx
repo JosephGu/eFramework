@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import Menu from './components/Menu'
 import './App.css'
-import Cookies from 'js-cookie';
 
 
 function App() {
@@ -23,20 +22,23 @@ function App() {
       });
   }, [])
 
-
+  function clickMe() {
+    fetch('./getUsers', {
+      method: 'GET', credentials: 'include',
+    }).then((res) => {
+      console.log(res.body);
+    })
+  }
 
   return (
     <>
       <Menu></Menu>
-      <button onClick={()=>clickMe()}>Click Me</button>
+      <button onClick={() => clickMe()}>Click Me</button>
     </>
   )
 }
 
 
-function clickMe(){
-  const csrfToken=Cookies.get('csrfToken');
-  console.log('csrfToken',csrfToken);
-}
+
 
 export default App
