@@ -5,6 +5,8 @@ const path = require('path');
 const csrf = require('csurf');
 const cookieParser = require('cookie-parser');
 const staticPath = path.join(__dirname, '../client/dist/');
+const jwt = require('jsonwebtoken');
+require('dotenv').config()
 
 const csrfProtection = csrf({
     cookie: {
@@ -41,7 +43,8 @@ app.listen(port, () => {
     console.log(`Listening on ${port}`);
 })
 
-app.get('/initPortal', csrfProtection, (req, res) => {
+app.get('/initPortal', authenticate, csrfProtection, (req, res) => {
+
     console.log(req.csrfToken())
     res.cookie('csrfToken', req.csrfToken());
     res.status(200).send();
@@ -49,17 +52,37 @@ app.get('/initPortal', csrfProtection, (req, res) => {
 
 app.post('/loginReq', (req, res) => {
 
-    console.log(req.body)
     const { email } = req.body;
     const { password } = req.body;
     const user = users.find((user) => user.email === email);
-    console.log(user,user.password === password)
+
     if (user && user.password === password) {
-        res.status(200).send();
+        const accessToken = generateAccessToken(user);
+        res.status(200).cookie('accessToken', accessToken).send();
     } else {
         res.status(401).send();
     }
 })
+
+function generateAccessToken(user) {
+    return jwt.sign({ username: user.username }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+}
+
+function authenticate(req, res, next) {
+    const accessToken = req.cookies.accessToken;
+    if (!accessToken) {
+        res.status(401).send();
+    } else {
+        jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+            if (err) {
+                res.status(401).send();
+            } else {
+                req.user = user;
+                next();
+            }
+        })
+    }
+}
 
 app.post('/add', function (req, res) {
     res.send('csrf was required to get here')
